@@ -1,0 +1,32 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: scm-clone
+  labels:
+    category: scm
+spec:
+  workspaces:
+    - name: src
+      mountPath: /opt/src
+  params:
+    - name: SCM_URL
+      type: string
+      description: git url to pull from.
+    - name: SCM_REFS
+      type: string
+      description: git refs to use, such as branch, tag, commit hash, etc.
+      default: main
+    - name: RUNNER_IMAGE
+      description: full container image to use
+      default: "quay.io/lrossett/tekton-runner:latest"
+  steps:
+    - name: fetch
+      image: "$(params['RUNNER_IMAGE'])"
+      command:
+        - git
+      args:
+        - "clone"
+        - "-b"
+        - "$(params['SCM_REFS'])"
+        - "$(params['SCM_URL'])"
+        - "/opt/src"

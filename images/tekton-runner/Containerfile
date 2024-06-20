@@ -1,0 +1,3 @@
+FROM quay.io/fedora/fedora:40
+
+RUN dnf install -y git podman wget buildah skopeo

@@ -1,0 +1,36 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: container-image-build
+spec:
+  workspaces:
+    - name: build-dir
+      mountPath: /opt/build
+  params:
+    - name: IMAGE_NAME
+      type: string
+      description: container image to build
+    - name: BUILDER_IMAGE
+      type: string
+      default: "quay.io/lrossett/tekton-runner:latest"
+      description: container image to use
+  volumes:
+    - name: containers-storage
+      emptyDir: {}
+  steps:
+    - name: build
+      securityContext:
+        runAsUser: 1000
+      image: "$(params['BUILDER_IMAGE'])"
+      workingDir: /opt/build
+      script: |
+        buildah \
+        build \
+        -t "$(params.IMAGE_NAME)" \
+        .
+      volumeMounts:
+        - name: containers-storage
+          mountPath: /var/lib/containers
+      securityContext:
+        privileged: true

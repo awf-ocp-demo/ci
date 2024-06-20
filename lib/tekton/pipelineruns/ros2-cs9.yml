@@ -1,0 +1,28 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  # name: ros2-cs9
+  generateName: ros2-cs9-container-ci-job-
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
+spec:
+  pipelineRef:
+    name: container-build
+  params:
+    - name: SCM_URL
+      value: "https://gitlab.com/fedora/sigs/robotics/images/ros2-cs9.git"
+    - name: SCM_REFS
+      value: "main"
+    - name: RUNNER_IMAGE
+      value: "quay.io/lrossett/tekton-runner:latest"
+    - name: IMAGE_NAME
+      value: "quay.io/lrossett/ros2-cs9:latest"
+  workspaces:
+    - name: shared-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 20Gi 

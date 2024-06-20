@@ -1,0 +1,46 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: container-build
+spec:
+  description: | 
+    This pipeline builds a linux container image from a repository.
+  params:
+  - name: SCM_URL
+    type: string
+  - name: SCM_REFS
+    type: string
+    default: main
+  - name: RUNNER_IMAGE
+    type: string
+    default: "quay.io/lrossett/tekton-runner:latest"
+  - name: IMAGE_NAME
+    type: string
+    default: "localhost/myimage:latest"
+  workspaces:
+    - name: shared-data
+  tasks:
+    - name: clone
+      taskRef:
+        name: scm-clone
+      workspaces:
+      - name: src
+        workspace: shared-data
+      params:
+      - name: SCM_URL
+        value: $(params.SCM_URL)
+      - name: git.refs
+        value: $(params.SCM_REFS)
+    - name: build
+      taskRef:
+        name: container-image-build
+      runAfter:
+        - clone
+      workspaces:
+        - name: build-dir
+          workspace: shared-data
+      params:
+      - name: BUILDER_IMAGE
+        value: $(params.RUNNER_IMAGE)
+      - name: IMAGE_NAME
+        value: $(params.IMAGE_NAME) 
