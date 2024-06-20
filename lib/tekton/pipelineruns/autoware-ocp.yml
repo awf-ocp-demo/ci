@@ -1,0 +1,40 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  # name: ros2-cs9
+  generateName: awf-ocp-ci-job-
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
+    tekton.dev/platforms: linux/amd64
+spec:
+  taskRunSpecs:
+    - pipelineTaskName: build
+      podTemplate:
+        nodeSelector:
+          beta.kubernetes.io/arch: amd64
+  pipelineRef:
+    name: container-build-ocp
+  params:
+    - name: SCM_URL
+      value: "https://github.com/awf-ocp-demo/autoware.git"
+    - name: SCM_REFS
+      value: "main"
+    - name: RUNNER_IMAGE
+      value: "registry.redhat.io/rhel8/buildah@sha256:b48f410efa0ff8ab0db6ead420a5d8d866d64af846fece5efb185230d7ecf591"
+    - name: IMAGE_NAME
+      value: "quay.io/lrossett/ros2-cs9:latest"
+    - name: CONTEXT
+      value: ./docker/
+    - name: DOCKERFILE
+      value: ./docker/Dockerfile
+    - name: BUILD_EXTRA_ARGS
+      value: '--build-arg BASE_IMAGE=ubuntu:latest'
+  workspaces:
+    - name: shared-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 20Gi 

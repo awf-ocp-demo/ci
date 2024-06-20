@@ -1,0 +1,73 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: container-build-ocp
+spec:
+  description: | 
+    This pipeline builds a linux container image from a repository using cluster tasks.
+  params:
+  - name: SCM_URL
+    type: string
+  - name: SCM_REFS
+    type: string
+    default: main
+  - name: RUNNER_IMAGE
+    type: string
+    default: "quay.io/lrossett/tekton-runner:latest"
+  - name: IMAGE_NAME
+    type: string
+    default: "localhost/myimage:latest"
+  - name: DOCKERFILE
+    type: string
+    default: ./Containerfile
+  - name: CONTEXT
+    type: string
+    default: .
+  - name: BUILD_EXTRA_ARGS
+    type: string
+    default: ''
+  workspaces:
+    - name: shared-data
+  tasks:
+    - name: clone
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      workspaces:
+      - name: output
+        workspace: shared-data
+      params:
+      - name: url
+        value: $(params.SCM_URL)
+      - name: revision
+        value: $(params.SCM_REFS)
+      - name: gitInitImage
+        value: 'registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:868966ef9d4b54952d8a74eb83bba40eb1f52c0148994fa704efd0e3797c61c5'
+      - name: userHome
+        value: /home/git
+    - name: build
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      runAfter:
+        - clone
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+      - name: BUILDER_IMAGE
+        value: $(params.RUNNER_IMAGE)
+      - name: STORAGE_DRIVER
+        value: vfs
+      - name: IMAGE
+        value: $(params.IMAGE_NAME)
+      - name: FORMAT
+        value: oci
+      - name: SKIP_PUSH
+        value: 'true'
+      - name: DOCKERFILE
+        value: $(params.DOCKERFILE)
+      - name: CONTEXT
+        value: $(params.CONTEXT)
+      - name: BUILD_EXTRA_ARGS
+        value: $(params.BUILD_EXTRA_ARGS)
